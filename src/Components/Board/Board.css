@@ -1,0 +1,74 @@
+
+
+.Game-board
+{
+    z-index: 2;
+    /*min-width: 100%;*/
+    padding-top: 30%;
+    height: 100% !important;
+    width:  100% !important;
+    margin: 10.5% !important;
+    background-color: gainsboro;
+}
+
+.tic-container
+{
+    width: 300px;
+    height: 300px;
+    /*margin: 15% 0% auto 0%;*/
+    padding-top: 5vh;
+    padding-bottom: 33vh;
+    border-collapse: collapse;
+    border: transparent;
+}
+
+.top
+{
+    border-top: none;
+}
+.tic-box.top {
+    border: solid black 1px;
+    border-top: none;
+    font-size: 5vw;
+    background: #ffffffff;
+
+}
+.tic-box.left
+{
+    border-left: none;
+}
+
+.tic-box.right
+{
+    border-right: none;
+}
+
+.tic-box.bottom
+{
+    border-bottom: none;
+}
+
+.tic-box {
+    position: relative;
+    overflow: hidden;
+     border: solid black 1px;
+     font-size: 5vw;
+     background: #ffffffff;
+     color: black;
+    height: 200% !important;
+    width: 200% !important;
+    cursor: default;
+ }
+.tic-box:hover{
+    background: wheat;
+}
+
+@keyframes fadeOut {
+    from {opacity: 100%}
+    to {opacity: 0%}
+}
+
+.hugeText
+{
+    font-size: 30px;
+}
