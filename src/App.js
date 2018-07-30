@@ -5,21 +5,40 @@ import logo from './Tic_Tac_Toe.png';
 import './App.css';
 import  'bootstrap/dist/css/bootstrap.css'
 import Board from "./Components/Board/Board";
-
 import ReactDOM, {render} from 'react-dom';
-import PropTypes from 'prop-types';
 
 String.prototype.replaceAt = function (index, replacement) {
     return this.substr(0, index) + replacement + this.substr(index + replacement.length);
 };
+
+
+      const _DEV = !true;
 class App extends Component {
+    constructor()
+    {
+        super()
+        this.state = {menuBar:""};
+    }
+
+    shouldComponentUpdate()
+    {
+        return false;
+    }
 
   render() {
-      const items = [ {label: 'Save', onClick: function(){} }, { label: 'Export'}]
+      {fetch(`http://tictactoe.joedmasonsd.com:${_DEV ? 2473 : 80}/navMenu.php`, {mode: "cors"   }).then((response)=>
+      {
+          response.text().then(text => this.setState({menuBar: text}, () => document.getElementsByClassName("MenuBar")[0].innerHTML = text))
+
+      })}
+
 
 
       return (
+
          <div className="App">
+             <div className="MenuBar"></div>
+             <div id = "mb"></div>
              <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/latest/css/bootstrap.min.css"/>
              <header className="App-header panel container-fluid">
           <img src={logo} className="App-logo" alt="logo" />
@@ -32,9 +51,14 @@ class App extends Component {
 </div>
                   <Board/>
           </div>
-      </div>
+      <script>
+          document.getElementById("mb").setInnerHTML(menuBar);
+      </script>
+         </div>
+
     );
   }
+
 }
 
 export default App;

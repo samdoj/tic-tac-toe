@@ -15,7 +15,7 @@ let dumbNetwork, mediumNetwork, smartNetwork, unbeatableNetwork;
 global.potentialOutcomes={"X":[], "O":[]};
 let turnX = true;
 
-//I understand this is frowned upon but it's both additive hence non-destructive and something that should exist.
+//I understand adding to the prototype is frowned upon but these functions are additive and something that should exist.
 String.prototype.replaceAt = function (index, replacement) {
     return this.substr(0, index) + replacement + this.substr(index + replacement.length);
 };
@@ -266,7 +266,6 @@ function countBlockedPaths(opponent) {
 
 }
 
-
 function moveVal(player) {
 let val=1;
 const opponent  = player === "X" ? "O" : "X";
@@ -280,12 +279,15 @@ if (isGameOver(gameString).wins)
         if (isGameOver(gameString).wins.indexOf(opponent)) return -3;
         else return 3;
     }
-    if (player === "O" && countWinningPaths(opponent) > 0) return -2// Really try not to make moves that give x the win.
+    if (player === "O" && countImmanentWins("X",gameString, false)) return -2// Really try not to make moves that give x the win.
+
     if (countBlockedPaths(opponent) > countBlockedPaths(player)) return 1.9;
-    else return -1;
+    else return -1.9;
 
 }
-//Neural nets don't take inputs > 1, so the data must be normalized.  2 is turned to .5
+
+
+//Neural nets in this library don't take inputs > 1, so the data must be normalized.  2 is turned to .5
 function normalize(n)
 {
 n = parseInt(n);
