@@ -1,12 +1,12 @@
 
 const synaptic = require('synaptic');
 const {Architect} = synaptic;
-const learningRate = .01;
+const learningRate = .1e-15;
 
 let generativeAdversarialNetwork =
     {
-    "X" : {network: new Architect.Perceptron(9,1,1)},
-    "O" : {network: new Architect.Perceptron(9,1,1)}
+    "X" : {network: new Architect.Perceptron(9,18,1)},
+    "O" : {network: new Architect.Perceptron(9,18,1)}
 };
 
 let lastX, lastO;
@@ -29,7 +29,7 @@ String.prototype.instanceCount = function (char)
 {
     const target = this;
     return [...this].filter((n) => n=== char).length;
-}
+};
 
 //console.log=()=>{return true};
 function isGameOver(theGameString) {
@@ -165,36 +165,38 @@ function gameStringPrint(gameString) {
     return gameStringPrint;  //Nothing needs to be returned but this is useful in debugging.
 }
 
-function countWinningPaths(player) {
+function countWinningPaths(player, gs) {
     const columnsArray = [[0, 3, 6], [1, 4, 7], [2, 5, 8]];
     const diagonalArray = [[0, 4, 8], [2, 4, 6]];
     const rowsArray = [[0, 1, 2], [3, 4, 5], [6, 7, 8]];
     const targetNum = player === "X" ? "0" : "2";
     const opponentNum = player !== "X" ? "0" : "2";
+    if (!gs) gs = gameString;
     let count = 0;
     for (let i = 0; i < 3 ; i++) {
         let row = "", column = "", diag = "";
         for (let j = 0; j < 3; j++) {
-            row = row.concat(gameString.charAt(rowsArray[i][j]));
-            column = column.concat(gameString.charAt(columnsArray[i][j]));
+            row = row.concat(gs.charAt(rowsArray[i][j]));
+            column = column.concat(gs.charAt(columnsArray[i][j]));
             if (i < 2)
-                diag = diag.concat(gameString.charAt(diagonalArray[i][j]))
+                diag = diag.concat(gs.charAt(diagonalArray[i][j]))
         }
         if (row.indexOf(targetNum) > -1 && row.indexOf(opponentNum) === -1)
         {
             //console.log(`ROW: ${row}`);
-           count++;
+           count+=row.instanceCount("1");
         }
         if (column.indexOf(targetNum) > -1 && column.indexOf(opponentNum) === -1)
         {
             //console.log(`COLUMN: ${column}`);
-            count++;
+            count+=column.instanceCount("1");
+
         }
         if (diag.indexOf(targetNum) > -1 && diag.indexOf(opponentNum) === -1)
         {
+            count+=diag.instanceCount("1");
             //console.log(`DIAG: ${diag}`);
-            count++;
-        }
+          }
         //console.log(row, column, diag)
     }
     //gameStringPrint(gameString)
@@ -208,7 +210,7 @@ function isBlocked(gameStringPiece, opponent) {
     let player = opponent === "X" ? "2" : "0";
     let tmp = opponent === "X" ? "0" : "2";
     opponent = tmp;
-    tmp = canBlock(gameStringPiece, opponent) && gameStringPiece.indexOf(player) > -1
+    tmp = canBlock(gameStringPiece, opponent) && gameStringPiece.indexOf(player) > -1;
     return tmp;
 }
 
@@ -220,16 +222,23 @@ function canBlock(gameStringPiece, player)
     return gameStringPiece.indexOf(player) !== gameStringPiece.lastIndexOf(player);
 
 }
+
+function isWinBlocked(group, test) {
+    return group.instanceCount(test);
+}
+
 /**
  * Returns 0 if the player didn't block the opponent and could not have.  Negative one if the player could have blocked the opponent, and 1 if they did.
  * @param opponent
  */
-function countBlockedPaths(opponent) {
+function countBlockedPaths(opponent, detectBlockedWins) {
     const columnsArray = [[0, 3, 6], [1, 4, 7], [2, 5, 8]];
     const diagonalArray = [[0, 4, 8], [2, 4, 6]];
     const rowsArray = [[0, 1, 2], [3, 4, 5], [6, 7, 8]];
       let sum = 0;
     let count = 0;
+    let blockedWinCount = 0;
+
     for (let i = 0; i < 3; i++) {
         let row = "", column = "", diag = "";
         for (let j = 0; j < 3; j++) {
@@ -238,52 +247,62 @@ function countBlockedPaths(opponent) {
             if (i < 2)
                 diag = diag.concat(gameString.charAt(diagonalArray[i][j]))
         }
+        let winBlocked = {row: isWinBlocked(row,opponent), column : isWinBlocked(column, opponent), diag: isWinBlocked(diag, opponent)};
+
         //Either both indexOf and lastIndexOf are -1, which means it's not there or only one is there, or they're different.
-        if (isBlocked(row, opponent)) {
+        if (isBlocked(row, opponent) && (winBlocked.row || !detectBlockedWins)) {
             sum += 1;
             count += 1;
+
+            if (detectBlockedWins && winBlocked.row)
+                blockedWinCount++;
         }
         else if (canBlock(row, opponent))
             sum++;
-        if (isBlocked(column, opponent)) {
+        if (isBlocked(column, opponent) && (winBlocked.column || !detectBlockedWins)) {
             sum += 1;
             count += 1;
+            if (detectBlockedWins && winBlocked.column)
+                blockedWinCount++;
         }
         else if (canBlock(column, opponent))
             sum++;
 
-        if (isBlocked(diag, opponent)) {
+        if (isBlocked(diag, opponent) && (winBlocked || !detectBlockedWins)) {
             sum += 1;
             count += 1;
+
+            if (detectBlockedWins && winBlocked.diag)
+                blockedWinCount++;
         }
         else if (canBlock(diag, opponent))
             sum++;
     }
        //gameStringPrint(gameString)
         //console.log(`sum: ${sum}\ncount: ${count}`);
-    return sum;
+    return detectBlockedWins ? blockedWinCount : sum;
 
 
 }
+
 
 function moveVal(player) {
 let val=1;
 const opponent  = player === "X" ? "O" : "X";
 const squaresLeft = gameString.instanceCount("1");
 
-if (squaresLeft > 6 ) return countWinningPaths(player);
+if (squaresLeft > 6 )
+    return countWinningPaths(player)*1000;
 
 //If the game is over, reward is 1 if the game is won, if it's a loss, it's a -1
 if (isGameOver(gameString).wins)
     {
-        if (isGameOver(gameString).wins.indexOf(opponent)) return -3;
-        else return 3;
+        if (isGameOver(gameString).wins.indexOf(opponent)) return -100;
+        else return 100;
     }
-    if (player === "O" && countImmanentWins("X",gameString, false)) return -2// Really try not to make moves that give x the win.
-
-    if (countBlockedPaths(opponent) > countBlockedPaths(player)) return 1.9;
-    else return -1.9;
-
+    if(countImmanentWins(opponent)) return - 100;
+    val = countWinningPaths(player) + 8*countBlockedPaths(opponent) + 13 * countBlockedPaths(opponent,true);
+    return val
 }
 
 
@@ -378,9 +397,10 @@ function isValidGame(gameString) {
 }
 
 //   }
+for (let h = 0; h<2; h++)
 for (let i = parseInt("011111111",3); i < parseInt("222222222",3) ; i++) {
     gameString = i.toString(3);
-    while (gameString.length < 9)
+    while (gameString.length < 9) //Make sure the number has a full 8 digits.
         gameString = "0" + gameString;
     if (isValidGame(gameString))
     {
@@ -495,7 +515,7 @@ for (let i = 0; i < iterations ; i++) {
                 const {round, random} = Math;
                 bestSpot = round(random()*8)
             }
-            while (gameString.charAt(bestSpot) !=="1")
+            while (gameString.charAt(bestSpot) !=="1");
             gameString = gameString.replaceAt(bestSpot, player);
             gameString = gameString.replace(player, replacement);
 

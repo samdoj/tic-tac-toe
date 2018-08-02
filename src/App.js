@@ -6,7 +6,7 @@ import './App.css';
 import  'bootstrap/dist/css/bootstrap.css'
 import Board from "./Components/Board/Board";
 import ReactDOM, {render} from 'react-dom';
-
+const navMenu = require('./navMenu.php').read;
 String.prototype.replaceAt = function (index, replacement) {
     return this.substr(0, index) + replacement + this.substr(index + replacement.length);
 };
@@ -26,18 +26,14 @@ class App extends Component {
     }
 
   render() {
-      {fetch(`http://tictactoe.joedmasonsd.com:${_DEV ? 2473 : 80}/navMenu.php`, {mode: "cors"   }).then((response)=>
-      {
-          response.text().then(text => this.setState({menuBar: text}, () => document.getElementsByClassName("MenuBar")[0].innerHTML = text))
 
-      })}
 
 
 
       return (
 
          <div className="App">
-             <div className="MenuBar"></div>
+             <div id="navMenuDiv">{navMenu}</div>
              <div id = "mb"></div>
              <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/latest/css/bootstrap.min.css"/>
              <header className="App-header panel container-fluid">

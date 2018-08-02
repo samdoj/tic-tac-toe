@@ -4,6 +4,7 @@ import 'bootstrap/dist/css/bootstrap.css'
 import $ from 'jquery';
 import {gan, norm} from '../../Components/AIPlayersHOC/neuralNets.js'
 
+
 class Board extends Component {
 
     isGameOver() {
@@ -55,6 +56,39 @@ class Board extends Component {
         if (winningSquares != undefined || base3.indexOf("1") === -1 && !winningSquares.length) return {winningSquares, wins};
         else if (i===2) return {winningSquares: false, wins: false}
     }
+    oTurn (){
+        let cells = document.getElementsByClassName("tic-box");
+        let moveStrength = [];
+        let moves = [];
+        const {max} = Math;
+        let {base3} = this.state;
+        if (this.state.turn === "O") {
+            for (let i = 0; i < 9; i++) {
+                let potential = [...base3];
+                if (potential[i] === "1") {
+                    potential[i] = 2; // O's number
+                    moves.push(potential);
+                    let move = potential.map((n) => norm(n)); //normalize the data
+                    moveStrength.push(gan.O.network.activate(move));
+                }
+                else moveStrength.push([-2]);
+
+            }
+            moveStrength = moveStrength.map((moves) => {
+                return moves[0]
+            });
+            let bestMove = moveStrength.indexOf(max(...moveStrength));
+            if (bestMove === -2 || base3.charAt(bestMove) !== "1" || this.state.winner) return;
+            if(this.isGameOver().wins=='' && bestMove > -2 && base3.charAt(bestMove)==='1') cells[bestMove].innerText = "O";
+            $('#activations').html(`${moveStrength[0]}, ${moveStrength[1]}, ${moveStrength[2]}
+            <br/>${moveStrength[3]}, ${moveStrength[4]}, ${moveStrength[5]}
+            <br/>${moveStrength[6]}, ${moveStrength[7]}, ${moveStrength[8]}`);
+            this.setState({base3: base3.replaceAt(bestMove, "2"), turn: "X"}, () => {
+
+
+            })
+        }
+    }
 
     constructor(props) {
         super(props);
@@ -66,6 +100,8 @@ class Board extends Component {
                 key: props.key,
                 winner: undefined
             }
+            this.oTurn=this.oTurn.bind(this)
+
     }
 
 
@@ -91,37 +127,7 @@ class Board extends Component {
             $("#winner").fadeOut(1500);
 
         }
-        let cells = document.getElementsByClassName("tic-box");
-        let moveStrength = [];
-        let moves = [];
-        const {max} = Math;
-        let {base3} = this.state;
-        if (this.state.turn==="O") {
-            for (let i = 0; i < 9; i++) {
-                let potential = [...base3];
-                if (potential[i] === "1") {
-                    potential[i] = 2; // O's number
-                    moves.push(potential);
-                    let move = potential.map((n) => norm(n)); //normalize the data
-                    moveStrength.push(gan.O.network.activate(move));
-                }
-                else moveStrength.push([-2]);
-
-            }
-            moveStrength = moveStrength.map((moves) => {
-                return moves[0]
-            });
-            let bestMove = moveStrength.indexOf(max(...moveStrength));
-            if (bestMove === -2 || base3.charAt(bestMove) !== "1" && !this.isGameOver(base3)) return;
-            cells[bestMove].innerText = "O";
-            this.setState({base3: base3.replaceAt(bestMove,"2"), turn: "X"},()=>
-            {
-                $("#activations").text(moveStrength);
-            });
-        }
-
-
-    }
+           }
 
     static removeListeners() {
         const cells = [...document.getElementsByClassName("tic-box")];
@@ -169,13 +175,18 @@ class Board extends Component {
                 e.currentTarget.innerText = "X";
                 let toBase3 = this.state.base3;
                 let id = parseInt(e.currentTarget.id) - 1;
+
+
                 this.setState
-                (turn === "X" ?
-                    {//Currently X's turn.  X is represented as 0
-                        turn: "O", base3: toBase3.replaceAt(id, '0') //Always replace with 2.  TODO: remove this logic.
-                    } :
-                    //Currently O's turn.  O is represented as 2
-                    {turn: "X", base3: toBase3.replaceAt(id, '0')});
+                (
+                    {//X is represented as 0
+                        turn: "O" , base3: toBase3.replaceAt(id, '0') //Always replace with 2.
+                    },()=>
+                    {
+                        setTimeout(this.oTurn, 250
+
+                        )
+                    })
             });
 
             if (i < 4)
@@ -202,7 +213,7 @@ class Board extends Component {
     render() {
         return <div>
             <span></span>
-            <div class="align-content-center align-items-center">
+            <div class="align-content-center align-items-center" style={{height:'calc(300px + 10vh'}}>
 
 
                 <div class="containerj">
