@@ -9,13 +9,8 @@ let generativeAdversarialNetwork =
     "O" : {network: new Architect.Perceptron(9,18,1)}
 };
 
-let lastX, lastO;
-let dumbNetwork, mediumNetwork, smartNetwork, unbeatableNetwork;
 
-global.potentialOutcomes={"X":[], "O":[]};
-let turnX = true;
-
-//I understand adding to the prototype is frowned upon but these functions are additive and something that should exist.
+//I understand adding to the prototype is frowned upon but these functions are additive and something that really should exist.
 String.prototype.replaceAt = function (index, replacement) {
     return this.substr(0, index) + replacement + this.substr(index + replacement.length);
 };
@@ -30,6 +25,9 @@ String.prototype.instanceCount = function (char)
     const target = this;
     return [...this].filter((n) => n=== char).length;
 };
+function teach(gameData, val)
+{generativeAdversarialNetwork.O.network.activate(gameData);
+    generativeAdversarialNetwork.O.network.propagate(gameData,[1])}
 
 //console.log=()=>{return true};
 function isGameOver(theGameString) {
@@ -129,6 +127,7 @@ function countImmanentWins(player, gameString, explicit) {
         // noinspection EqualityComparisonWithCoercionJS
         const targetCountDiagonal = [...diagonalStr].filter((n) => n == targetNum).length === 2;
         // noinspection EqualityComparisonWithCoercionJS
+
         if(explicit){
         console.log("Opponent in:");
         console.log("i Horizontal Vertical Diagonal","color: blue");
@@ -142,6 +141,7 @@ function countImmanentWins(player, gameString, explicit) {
         console.log(`${i} ${targetCountHorizontal.toString().toUpperCase().charAt(0)}         ${targetCountVertical
             .toString().toUpperCase().charAt(0)}          ${
             targetCountDiagonal.toString().toUpperCase().charAt(0)}\n`);}if (!(targetCountVertical || targetCountDiagonal || targetCountHorizontal)) continue;
+
         if (targetCountVertical && !opponentInVertical) count++;
         if (targetCountVertical && !opponentInHorizontal) count++;
         if (targetCountDiagonal && !opponentInDiagonal) count++;
@@ -287,21 +287,11 @@ function countBlockedPaths(opponent, detectBlockedWins) {
 
 
 function moveVal(player) {
-let val=1;
+let val;
 const opponent  = player === "X" ? "O" : "X";
-const squaresLeft = gameString.instanceCount("1");
 
-if (squaresLeft > 6 )
-    return countWinningPaths(player)*1000;
-
-//If the game is over, reward is 1 if the game is won, if it's a loss, it's a -1
-if (isGameOver(gameString).wins)
-    {
-        if (isGameOver(gameString).wins.indexOf(opponent)) return -100;
-        else return 100;
-    }
-    if(countImmanentWins(opponent)) return - 100;
-    val = countWinningPaths(player) + 8*countBlockedPaths(opponent) + 13 * countBlockedPaths(opponent,true);
+    if(countImmanentWins(opponent, gameString)) return - 10;
+    val = countBlockedPaths(opponent,true) ? countBlockedPaths(opponent,true) * 13 :countWinningPaths(opponent)
     return val
 }
 
@@ -397,6 +387,8 @@ function isValidGame(gameString) {
 }
 
 //   }
+let winningGames = [];
+let losingGames = [];
 for (let h = 0; h<2; h++)
 for (let i = parseInt("011111111",3); i < parseInt("222222222",3) ; i++) {
     gameString = i.toString(3);
@@ -404,144 +396,44 @@ for (let i = parseInt("011111111",3); i < parseInt("222222222",3) ; i++) {
         gameString = "0" + gameString;
     if (isValidGame(gameString))
     {
-           let gameData = [...gameString].map( (n) => normalize(n));
-
-           let xval = moveVal("X");
-           generativeAdversarialNetwork.X.network.activate(gameData);
-           generativeAdversarialNetwork.X.network.propagate(learningRate,[xval]);
-
-           if (gameString.indexOf("2") > -1 )
-           {
-               let oval = moveVal("O");
-               generativeAdversarialNetwork.O.network.activate(gameData);
-               generativeAdversarialNetwork.O.network.propagate(learningRate,[oval]);
-           console.log();
-           }
+           if(isGameOver(gameString).wins.toString().indexOf("O") > -1 || isGameOver(gameString).toString().indexOf("draw") > -1)
+               winningGames.concat(gameString)
+        else
+            losingGames.concat(gameString)
     }
+    let gameData = [...gameString].map( (n) => normalize(n));
 
-}
-let xWinCount = 0;
-let oWinCount = 0;
-for (let trainee = 0; trainee<3; trainee += 2);
-// {
-//     console.log(`Trainee is ${trainee ? "O" : "X"}`);
-//     let states = [];
-//     let xTurn = false;
-// for (let i = 0; i < 5e4 ; i++) {
-//     if (i % 1000 === 0) console.log(i)
-//         let replacement;
-//     let player = xTurn ? "X" : "O";
-//     gameString = "111111111";
-//     xTurn= !xTurn;
-//
-//     while (!isGameOver(gameString).wins)
-//     {
-//         let ct=0;
-//         let moves = [];
-//         let gameData;
-//     //Loop over the game string alternating turns and finding the highest activation of the changed string going from 0-8
-//         for (let j = 0; j < 9 ; j++)
-//         {
-//          let afterMove = gameString;
-//          if (afterMove.charAt(j) === "1") afterMove = afterMove.replaceAt(j,player);
-//          replacement = xTurn ? "0" : "2";
-//          afterMove = afterMove.replace(player, replacement);
-//                 gameData = [...afterMove];
-//                 gameData.map((n) => normalize(n));
-//             if (afterMove === gameString) {
-//                 moves.push(-2)
-//             }
-//             else {
-//                 moves.push(...generativeAdversarialNetwork[player].network.activate(gameData));
-//             }
-//         }
-//            // gameStringPrint(gameString);
-//         let bestSpot = moves.indexOf(Math.max(...moves)); //We're training one player at a time to make the best moves.
-//             //console.log(`BEST index = : ${bestSpot}`);
-//
-// // Play best move if the current player is the neural net we're training.
-//         gameString = gameString.replaceAt(bestSpot, player);
-//         gameString = gameString.replace(player, replacement);
-//
-//         gameData = [...gameString].map((n) => normalize(n));
-//            states.push(gameData);
-//            xTurn = !xTurn;
-//            //todo: propagate here
-//         let network = xTurn ? generativeAdversarialNetwork.X.network : generativeAdversarialNetwork.O.network;
-//         network.activate(gameData);
-//         network.propagate(.3, [moveVal(player)])
-//         ct++
-//
-//     }
-// //    console.dir(isGameOver(gameString));
-//     let winner = isGameOver(gameString).wins;
-//     let backPropNum = 0;
-//
-//     }
-//
-// }
-let xTurn;
-const iterations = 1e2;
-for (let i = 0; i < iterations ; i++) {
-    if (i % 1000 === 0) console.log(i);
-    let replacement;
-    gameString = "111111111";
-    xTurn= true;
+    let xval = moveVal("X");
+    generativeAdversarialNetwork.X.network.activate(gameData);
+    generativeAdversarialNetwork.X.network.propagate(learningRate,[xval]);
 
-    while (!isGameOver(gameString).wins)
+    if (gameString.indexOf("2") > -1 )
     {
-
-        let player = xTurn ? "X" : "O";
-        let ct=0;
-        let moves = [];
-        let gameData;
-        //Loop over the game string alternating turns and finding the highest activation of the changed string going from 0-8
-        for (let j = 0; j < 9 ; j++)
-        {
-            let afterMove = gameString;
-            if (afterMove.charAt(j) === "1") afterMove = afterMove.replaceAt(j,player);
-            replacement = xTurn ? "0" : "2";
-            afterMove = afterMove.replace(player, replacement);
-            gameData = [...afterMove];
-            gameData.map((n) => normalize(n));
-            if (afterMove !== gameString)
-
-                moves.push(...generativeAdversarialNetwork[player].network.activate(gameData));
-            else moves.push(-1)
-        }
-        let bestSpot = moves.indexOf(Math.max(...moves));
-        if(player === "X" && ct === 0)
-            do {
-                const {round, random} = Math;
-                bestSpot = round(random()*8)
-            }
-            while (gameString.charAt(bestSpot) !=="1");
-            gameString = gameString.replaceAt(bestSpot, player);
-            gameString = gameString.replace(player, replacement);
-
-           gameData = [...gameString].map((n) => normalize(n));
-
-
-
-        xTurn = !xTurn;
-        ct++
-
+        let oval = moveVal("O");
+        generativeAdversarialNetwork.O.network.activate(gameData);
+        generativeAdversarialNetwork.O.network.propagate(learningRate,[oval]);
+        console.log();
     }
-
-    let winner = isGameOver(gameString).wins;
-    if (winner)
-    {
-        //console.dir(isGameOver(gameString));
-        gameStringPrint(gameString);
-        if (winner.indexOf("X") > -1) xWinCount++;
-        if (winner.indexOf("O") > -1) oWinCount++;
-    }
-
-
-    //turnX = true;
 }
 
-console.warn(`X wins: ${xWinCount} or ${xWinCount/ iterations * 100}%`);
-console.warn(`O wins: ${oWinCount} or ${oWinCount / iterations * 100}%`);
-console.warn(`draws: ${iterations-xWinCount-oWinCount} or ${(iterations-oWinCount-xWinCount) / iterations * 100}%`);
+winningGames.forEach(gameString =>
+{
+    let gameData = normalize(gameString);
+    for (let i = 0; i<9; i++)
+    {
+        if (gameString.charAt(i)==="2") //Character for O
+       teach(gameData,learningRate*1);
+    }
+})
+losingGames.forEach(gameString =>
+{
+    let gameData = normalize(gameString);
+    for (let i = 0; i<9; i++)
+    {
+        if (gameString.charAt(i)==="2") //Character for O
+            teach(gameData,-learningRate*4);
+    }
+})
+
+
 export {generativeAdversarialNetwork as gan, normalize as norm}
