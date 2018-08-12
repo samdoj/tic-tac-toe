@@ -1,12 +1,12 @@
 
 const synaptic = require('synaptic');
 const {Architect} = synaptic;
-const learningRate = .1e-15;
+const learningRate = .1e-5;
 
 let generativeAdversarialNetwork =
     {
-    "X" : {network: new Architect.Perceptron(9,18,1)},
-    "O" : {network: new Architect.Perceptron(9,18,1)}
+    "X" : {network: new Architect.Perceptron(9,1,1)},
+    "O" : {network: new Architect.Perceptron(9,1,1)}
 };
 
 
@@ -20,11 +20,11 @@ String.prototype.replaceAll = function(search, replacement) {
     return target.replace(new RegExp(search, 'g'), replacement);
 };
 
-String.prototype.instanceCount = function (char)
+String.prototype.tokenCount = function (char)
 {
-    const target = this;
     return [...this].filter((n) => n=== char).length;
 };
+
 function teach(gameData, val)
 {generativeAdversarialNetwork.O.network.activate(gameData);
     generativeAdversarialNetwork.O.network.propagate(gameData,[1])}
@@ -184,17 +184,17 @@ function countWinningPaths(player, gs) {
         if (row.indexOf(targetNum) > -1 && row.indexOf(opponentNum) === -1)
         {
             //console.log(`ROW: ${row}`);
-           count+=row.instanceCount("1");
+           count+=row.tokenCount("1");
         }
         if (column.indexOf(targetNum) > -1 && column.indexOf(opponentNum) === -1)
         {
             //console.log(`COLUMN: ${column}`);
-            count+=column.instanceCount("1");
+            count+=column.tokenCount("1");
 
         }
         if (diag.indexOf(targetNum) > -1 && diag.indexOf(opponentNum) === -1)
         {
-            count+=diag.instanceCount("1");
+            count+=diag.tokenCount("1");
             //console.log(`DIAG: ${diag}`);
           }
         //console.log(row, column, diag)
@@ -224,7 +224,7 @@ function canBlock(gameStringPiece, player)
 }
 
 function isWinBlocked(group, test) {
-    return group.instanceCount(test);
+    return group.tokenCount(test);
 }
 
 /**
@@ -249,7 +249,6 @@ function countBlockedPaths(opponent, detectBlockedWins) {
         }
         let winBlocked = {row: isWinBlocked(row,opponent), column : isWinBlocked(column, opponent), diag: isWinBlocked(diag, opponent)};
 
-        //Either both indexOf and lastIndexOf are -1, which means it's not there or only one is there, or they're different.
         if (isBlocked(row, opponent) && (winBlocked.row || !detectBlockedWins)) {
             sum += 1;
             count += 1;
@@ -287,12 +286,11 @@ function countBlockedPaths(opponent, detectBlockedWins) {
 
 
 function moveVal(player) {
-let val;
 const opponent  = player === "X" ? "O" : "X";
 
-    if(countImmanentWins(opponent, gameString)) return - 10;
-    val = countBlockedPaths(opponent,true) ? countBlockedPaths(opponent,true) * 13 :countWinningPaths(opponent)
-    return val
+   // if(countImmanentWins(opponent, gameString)) return - 10;
+    return ((countBlockedPaths(opponent,true) * 8) +1 )  * (countBlockedPaths(opponent, false)/2  + 1) * (countImmanentWins(opponent)*-10+1)
+
 }
 
 
@@ -377,9 +375,9 @@ n = parseInt(n);
 //     lastX = "111111111";
 //     lastO = "111111111";
 function isValidGame(gameString) {
-    if (gameString.instanceCount("1") === 9) return false;
-    let xCount = gameString.instanceCount("0");
-    let oCount = gameString.instanceCount("2");
+    if (gameString.tokenCount("1") === 9) return false;
+    let xCount = gameString.tokenCount("0");
+    let oCount = gameString.tokenCount("2");
     let valid = xCount === oCount;
     valid = valid || xCount - 1 === oCount;
     return valid;
@@ -421,8 +419,8 @@ winningGames.forEach(gameString =>
     let gameData = normalize(gameString);
     for (let i = 0; i<9; i++)
     {
-        if (gameString.charAt(i)==="2") //Character for O
-       teach(gameData,learningRate*1);
+        if (gameString.charAt(i)==="2"); //Character for O
+     //  teach(gameData,learningRate*1);
     }
 })
 losingGames.forEach(gameString =>
@@ -431,7 +429,7 @@ losingGames.forEach(gameString =>
     for (let i = 0; i<9; i++)
     {
         if (gameString.charAt(i)==="2") //Character for O
-            teach(gameData,-learningRate*4);
+            ;//teach(gameData,-learningRate*0);
     }
 })
 
