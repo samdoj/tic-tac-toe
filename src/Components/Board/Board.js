@@ -257,11 +257,9 @@ class Board extends Component {
                     </div>
                 </div>
             </div>
-            <div style = {{fontSize:18}} id = "activations">
-            </div>
             <div class="text-xl-center hugeText" id="winner">
-            </div >
-        </div>
+            </div>
+        </div> 
 
 
     }
